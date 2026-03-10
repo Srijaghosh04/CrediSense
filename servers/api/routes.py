@@ -1,3 +1,5 @@
+import os
+import tempfile
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 import json
 from services.ingestor import IngestorService
@@ -29,7 +31,7 @@ async def ingest_document(
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
     
     # Save the uploaded file temporarily
-    file_path = f"/tmp/{file.filename}"
+    file_path = os.path.join(tempfile.gettempdir(), file.filename)
     with open(file_path, "wb") as buffer:
         content = await file.read()
         buffer.write(content)
