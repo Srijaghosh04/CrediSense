@@ -1,0 +1,23 @@
+Date,Description,Credit,Debit,Balance
+2024-04-02,Transfer from Zenith Metals Ltd,5000000,0,15000000
+2024-04-05,Supplier Payment - Raw Materials,0,3200000,11800000
+2024-04-10,Payment from ABC Trading Co,7500000,0,19300000
+2024-04-11,Transfer to ABC Trading Co,0,7400000,11900000
+2024-04-15,Salary Disbursement,0,1800000,10100000
+2024-04-18,Payment from DEF Industries,4200000,0,14300000
+2024-04-20,Loan EMI Payment,0,2500000,11800000
+2024-04-25,Payment from GHI Exports,6000000,0,17800000
+2024-04-26,Transfer to GHI Exports,0,5950000,11850000
+2024-04-28,Payment from JKL Metals,9500000,0,21350000
+2024-04-29,Transfer to MNO Suppliers,0,9400000,11950000
+2024-04-30,Payment from PQR Finance,12000000,0,23950000
+2024-04-30,Transfer to STU Holdings,0,11800000,12150000
+2024-05-03,Payment from Zenith Metals Ltd,4800000,0,16950000
+2024-05-07,Supplier Payment - Chemicals,0,2100000,14850000
+2024-05-12,Payment from VWX Corp,3500000,0,18350000
+2024-05-15,Salary Disbursement,0,1800000,16550000
+2024-05-20,Loan EMI Payment,0,2500000,14050000
+2024-05-28,Payment from ABC Trading Co,8000000,0,22050000
+2024-05-29,Transfer to ABC Trading Co,0,7900000,14150000
+2024-05-30,Payment from DEF Industries,6500000,0,20650000
+2024-05-31,Transfer to DEF Industries,0,6400000,14250000

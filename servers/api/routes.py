@@ -10,6 +10,9 @@ from models.schemas import (
     FiveCsScore, FiveCsNarrative, CreditDecision
 )
 from store import applications_db, documents_db, insights_db, research_db, cam_reports_db
+from services.ingestor import IngestorService
+
+ingestor_service = IngestorService()
 
 router = APIRouter()
 
@@ -19,8 +22,6 @@ router = APIRouter()
 @router.get("/health")
 def health_check():
     return {"status": "ok"}
-
-
 
 # Route 1: Create a new loan application
 
@@ -41,8 +42,6 @@ def create_application(app_data: CompanyApplicationCreate):
 def list_applications():
     return list(applications_db.values())
 
-
-
 # Route 3: Get a single application by ID
 
 @router.get("/applications/{application_id}", response_model=CompanyApplication)
@@ -55,40 +54,30 @@ def get_application(application_id: str):
 
 # Route 4: Upload and parse a document (PDF/CSV)
 
-
 @router.post("/ingest/document", response_model=DocumentUploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
     application_id: str = Form(...),
     file_type: DocumentType = Form(...)
 ):
-    # Check if application exists
     if application_id not in applications_db:
         raise HTTPException(status_code=404, detail="Application not found")
 
-    # Update application status
     applications_db[application_id].status = ApplicationStatus.INGESTING
 
-    # Read the file content
     file_content = await file.read()
-
-    # Generate a document ID
     doc_id = f"DOC-{uuid.uuid4().hex[:6]}"
 
-    # TODO: Replace with actual IngestorService parsing
-    # For now, create a placeholder document
-    document = IngestedDocument(
-        id=doc_id,
-        application_id=application_id,
-        file_name=file.filename or "unknown",
-        file_type=file_type,
-        extracted_text_preview=f"[Pending processing] File size: {len(file_content)} bytes",
-        financials=None,
-        anomalies=[],
-        processing_status="pending"
-    )
+    try:
+        document = ingestor_service.parse_pdf(
+            file_content=file_content,
+            file_name=file.filename or "unknown",
+            application_id=application_id,
+            doc_id=doc_id
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
 
-    # Save to store
     if application_id not in documents_db:
         documents_db[application_id] = []
     documents_db[application_id].append(document)
@@ -96,7 +85,7 @@ async def upload_document(
     return DocumentUploadResponse(
         success=True,
         document=document,
-        message=f"Document '{file.filename}' uploaded. Processing pending."
+        message=f"Document '{file.filename}' processed successfully."
     )
 
 
@@ -116,17 +105,16 @@ async def upload_structured_data(
     file_content = await file.read()
     doc_id = f"DOC-{uuid.uuid4().hex[:6]}"
 
-    # TODO: Replace with actual IngestorService structured data processing
-    document = IngestedDocument(
-        id=doc_id,
-        application_id=application_id,
-        file_name=file.filename or "unknown",
-        file_type=file_type,
-        extracted_text_preview=f"[Structured data] File size: {len(file_content)} bytes",
-        financials=None,
-        anomalies=[],
-        processing_status="pending"
-    )
+    try:
+        document = ingestor_service.process_structured(
+            file_content=file_content,
+            file_name=file.filename or "unknown",
+            file_type=file_type,
+            application_id=application_id,
+            doc_id=doc_id
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process structured data: {str(e)}")
 
     if application_id not in documents_db:
         documents_db[application_id] = []
@@ -135,7 +123,7 @@ async def upload_structured_data(
     return DocumentUploadResponse(
         success=True,
         document=document,
-        message=f"Structured file '{file.filename}' uploaded. Processing pending."
+        message=f"Structured file '{file.filename}' processed successfully."
     )
 
 
