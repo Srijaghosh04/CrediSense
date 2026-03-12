@@ -1,8 +1,16 @@
-import { Outlet, Link, useLocation } from "react-router-dom"
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom"
 import { Activity, LayoutDashboard, FileText, Settings, LogOut, Search } from "lucide-react"
+import { useAuth } from "../contexts/AuthContext"
 
 export default function DashboardLayout() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, signOut } = useAuth()
+
+  const handleLogout = async () => {
+    await signOut()
+    navigate("/login")
+  }
 
   const navItems = [
     { name: "Dashboard", path: "/", icon: LayoutDashboard },
@@ -42,8 +50,15 @@ export default function DashboardLayout() {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-white/5">
-          <button className="flex w-full items-center px-4 py-3 text-sm font-semibold text-slate-400 rounded-xl hover:bg-white/5 hover:text-white transition-all duration-200 tracking-wide">
+        <div className="p-4 border-t border-white/5 space-y-4">
+          <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/5">
+             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Authenticated as</p>
+             <p className="text-[12px] font-semibold text-slate-300 truncate">{user?.email}</p>
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="flex w-full items-center px-4 py-3 text-sm font-semibold text-rose-400/80 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 transition-all duration-200 tracking-wide"
+          >
             <LogOut className="h-5 w-5 mr-3" />
             Logout
           </button>
