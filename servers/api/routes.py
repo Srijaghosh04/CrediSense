@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from models.schemas import (
     CompanyApplicationCreate, CompanyApplication,
     DocumentUploadRequest, DocumentUploadResponse, IngestedDocument,
@@ -11,6 +11,7 @@ from models.schemas import (
 )
 from store import db
 from services.ingestor import IngestorService
+from authentication.auth import verify_token
 
 ingestor_service = IngestorService()
 router = APIRouter()
@@ -20,7 +21,7 @@ def health_check():
     return {"status": "ok"}
 
 @router.post("/applications", response_model=CompanyApplication)
-def create_application(app_data: CompanyApplicationCreate):
+def create_application(app_data: CompanyApplicationCreate, user: dict = Depends(verify_token)):
     app_id = f"APP-{uuid.uuid4().hex[:6]}"
     application = CompanyApplication(
         id=app_id,
@@ -35,14 +36,14 @@ def create_application(app_data: CompanyApplicationCreate):
     return application
 
 @router.get("/applications", response_model=list[CompanyApplication])
-def list_applications():
+def list_applications(user: dict = Depends(verify_token)):
     if db.client:
         res = db.client.table("applications").select("*").execute()
         return [CompanyApplication(**row) for row in res.data]
     return []
 
 @router.get("/applications/{application_id}", response_model=CompanyApplication)
-def get_application(application_id: str):
+def get_application(application_id: str, user: dict = Depends(verify_token)):
     if db.client:
         res = db.client.table("applications").select("*").eq("id", application_id).execute()
         if not res.data:
@@ -54,7 +55,8 @@ def get_application(application_id: str):
 async def upload_document(
     file: UploadFile = File(...),
     application_id: str = Form(...),
-    file_type: DocumentType = Form(...)
+    file_type: DocumentType = Form(...),
+    user: dict = Depends(verify_token)
 ):
     if db.client:
         app_res = db.client.table("applications").select("*").eq("id", application_id).execute()
@@ -91,7 +93,8 @@ async def upload_document(
 async def upload_structured_data(
     file: UploadFile = File(...),
     application_id: str = Form(...),
-    file_type: DocumentType = Form(...)
+    file_type: DocumentType = Form(...),
+    user: dict = Depends(verify_token)
 ):
     if db.client:
         app_res = db.client.table("applications").select("*").eq("id", application_id).execute()
@@ -123,14 +126,14 @@ async def upload_structured_data(
     )
 
 @router.get("/ingest/documents/{application_id}", response_model=list[IngestedDocument])
-def get_documents(application_id: str):
+def get_documents(application_id: str, user: dict = Depends(verify_token)):
     if db.client:
         res = db.client.table("ingested_documents").select("*").eq("application_id", application_id).execute()
         return [IngestedDocument(**row) for row in res.data]
     return []
 
 @router.get("/research/company/{application_id}", response_model=ResearchResult)
-def research_company(application_id: str):
+def research_company(application_id: str, user: dict = Depends(verify_token)):
     if db.client:
         app_res = db.client.table("applications").select("*").eq("id", application_id).execute()
         if not app_res.data:
@@ -160,7 +163,7 @@ def research_company(application_id: str):
     return result
 
 @router.post("/engine/primary-insights", response_model=PrimaryInsight)
-def add_primary_insight(insight_data: PrimaryInsightCreate):
+def add_primary_insight(insight_data: PrimaryInsightCreate, user: dict = Depends(verify_token)):
     insight_id = f"INS-{uuid.uuid4().hex[:6]}"
     insight = PrimaryInsight(
         id=insight_id,
@@ -178,14 +181,14 @@ def add_primary_insight(insight_data: PrimaryInsightCreate):
     return insight
 
 @router.get("/engine/insights/{application_id}", response_model=list[PrimaryInsight])
-def get_insights(application_id: str):
+def get_insights(application_id: str, user: dict = Depends(verify_token)):
     if db.client:
         res = db.client.table("primary_insights").select("*").eq("application_id", application_id).execute()
         return [PrimaryInsight(**row) for row in res.data]
     return []
 
 @router.post("/engine/generate-cam", response_model=CAMReport)
-def generate_cam(application_id: str):
+def generate_cam(application_id: str, user: dict = Depends(verify_token)):
     if not db.client:
         raise HTTPException(status_code=500, detail="Database not configured")
         
@@ -242,7 +245,7 @@ def generate_cam(application_id: str):
     return cam
 
 @router.post("/engine/export-cam")
-def export_cam(export_request: CAMExportRequest):
+def export_cam(export_request: CAMExportRequest, user: dict = Depends(verify_token)):
     if db.client:
         cam_res = db.client.table("cam_reports").select("id").eq("application_id", export_request.application_id).execute()
         if not cam_res.data:
